@@ -311,28 +311,18 @@ def infer_type(
     if field.image_values >= 3:
         return IMAGE
 
-    # If small number of distinct values, use CATEGORY if either not all are numerical or
-    # they form a sequential list of integers suggesting the values represent categories
-    if (num_distinct_values < SMALL_DISTINCT_COUNT and
-        ((not strings_utils.are_all_numericals(distinct_values)) or
-         strings_utils.are_sequential_integers(distinct_values))):
-        # TODO (tgaddair): come up with something better than this, maybe attempt to fit to Gaussian
-        # NOTE (ASN): edge case -- there are less than SMALL_DISTINCT_COUNT samples in dataset
+    # Use CATEGORY if there are a small number of distinct values.
+    if num_distinct_values < SMALL_DISTINCT_COUNT:
         return CATEGORY
 
-    # add criteria for number of spaces
-    if field.avg_words and field.avg_words > 2:
-        return TEXT
+    # Use numerical if all of the distinct values are numerical.
+    if strings_utils.are_all_numericals(distinct_values):
+        return NUMERICAL
 
     # TODO (ASN): add other modalities (image, etc. )
 
-    # If either of 2 examples is not numerical, use CATEGORY type.  We examine 2 since missing
-    # values can be coded as NaN, which is numerical, even for fields that are otherwise strings.
-    if (num_distinct_values > 1 and ((not strings_utils.is_numerical(distinct_values[0])) or
-                                     (not strings_utils.is_numerical(distinct_values[1])))):
-        return CATEGORY
-
-    return NUMERICAL
+    # Default to TEXT.
+    return TEXT
 
 
 def should_exclude(idx: int, field: FieldInfo, dtype: str, row_count: int,
